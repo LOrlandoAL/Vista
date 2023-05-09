@@ -3,6 +3,7 @@ using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -77,10 +78,71 @@ namespace Datos
 
         }
 
+        public List<Product> GetOrders()
+        {
+            List<Product> lista = new List<Product>();
+            //Conectarme
+            if (Conexion.Conectar())
+            {
+                try
+                {
+                    //Crear la sentencia a ejecutar (SELECT)
+                    String select = @"select products.productName, 
+                                    suppliers.Companyname, 
+                                    if(products.ReorderLevel > 
+                                    products.UnitsInStock, 
+                                    products.ReorderLevel - products.UnitsInStock, 0) as Unidades 
+                                    from products
+                                    JOIN SUPPLIERS ON products.supplierid = suppliers.supplierId
+                                    where discontinued = false;";
+                    /*String select = @"SELECT p.PRODUCTID, p.PRODUCTNAME, p.SUPPLIERID, 
+                        p.CATEGORYID, p.QUANTITYPERUNIT, p.UNITPRICE, p.UNITSINSTOCK, 
+                        p.UNITSONORDER, p.REORDERLEVEL, p.DISCONTINUED 
+                        FROM PRODUCTS p;";*/
+                    //Definir un datatable para que sea llenado
+                    DataTable dt = new DataTable();
+                    //Crear el dataadapter
+                    MySqlCommand sentencia = new MySqlCommand();
+                    sentencia.CommandText=select;
+                    sentencia.Connection = Conexion.conexion;
+                    MySqlDataAdapter da = new MySqlDataAdapter();
+                    da.SelectCommand = sentencia;
+                    //Llenar el datatable
+                    da.Fill(dt);
+                    //Crear un objeto categoría por cada fila de la tabla y añadirlo a la lista
+                    foreach (DataRow fila in dt.Rows)
+                    {
+                        Product producto = new Product(
+                            //int.Parse(fila["Clave"].ToString())
+                            0,
+                            fila["PRODUCTNAME"].ToString(),
+                            0,
+                            fila["COMPANYNAME"].ToString(),
+                            0,
+                            "",
+                            "",
+                            Convert.ToDouble(fila["Unidades"]),//UnitPrice
+                            Convert.ToInt32(fila["UNITSINSTOCK"]),
+                            0,
+                            Convert.ToInt32(fila["REORDERLEVEL"]),
+                            false
+                            );
+                        lista.Add(producto);
+                    }
 
+                    return lista;
+                }
+                finally
+                {
+                    Conexion.Desconectar();
+                }
+            }
+            else
+            {
+                return null;
+            }
 
-
-
+        }
 
         //-------------------------------------------- AGREGAR -----------------------------------------------------
 
